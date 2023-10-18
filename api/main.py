@@ -44,7 +44,12 @@ async def create_user(user: utils.UserCreate, db: Session = Depends(get_db)):
     user_id = crud.create_user(db, user)
     if user_id is None:
         raise HTTPException(status_code=400, detail="User with the same email already exists")
-    created_user = models.User(**user.dict(), id=user_id)
+    created_user = models.User(username=user.username,
+                               email=user.email,
+                               hashed_password=user.password,
+                               id=user_id)
+    db.commit()
+
     return created_user
 
 

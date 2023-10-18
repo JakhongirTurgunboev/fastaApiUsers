@@ -45,7 +45,9 @@ def update_user(db: Session, user_id: int, user: UserUpdate):
     )
     db.execute(sql, {"user_id": user_id, "username": user.username, "email": user.email})
     db.commit()
-    return {"message": "User updated"}
+    result = db.execute(sql, {"user_id": user_id})
+    user = result.fetchone()
+    return user
 
 
 def delete_user(db: Session, user_id: int):
