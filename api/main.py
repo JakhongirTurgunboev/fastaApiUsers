@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 import logging
 import os
 from database import crud, models, database, utils
+from database.database import get_db
 from api import auth
 
 app = FastAPI()
@@ -32,14 +33,8 @@ logging.basicConfig(
 # OAuth2 for JWT Authentication
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-
-# Dependency to get the database session
-def get_db():
-    db = database.SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# Check if the "users" table exists and create it if not
+database.create_users_table_if_not_exists()
 
 
 # CRUD Operations for Users
@@ -47,6 +42,8 @@ def get_db():
 @app.post("/users/", response_model=utils.UserResponse)
 async def create_user(user: utils.UserCreate, db: Session = Depends(get_db)):
     user_id = crud.create_user(db, user)
+    if user_id is None:
+        raise HTTPException(status_code=400, detail="User with the same email already exists")
     created_user = models.User(**user.dict(), id=user_id)
     return created_user
 

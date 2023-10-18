@@ -1,13 +1,15 @@
-version: "3"
+version: '3'
+
 services:
-  api:
+  fastapi:
     build:
       context: .
     ports:
       - "80:80"
-    volumes:
-      - .:/app
-  db:
-    image: sqlite
-    volumes:
-      - /path/to/your/sqlite/database/file:/app/database.db
+    depends_on:
+      - alembic
+
+  alembic:
+    build:
+      context: .
+    entrypoint: ["alembic", "upgrade", "head"]
