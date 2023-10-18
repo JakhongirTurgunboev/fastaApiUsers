@@ -43,11 +43,19 @@ def update_user(db: Session, user_id: int, user: UserUpdate):
     sql = text(
         "UPDATE users SET username = :username, email = :email WHERE id = :user_id"
     )
+
     db.execute(sql, {"user_id": user_id, "username": user.username, "email": user.email})
     db.commit()
-    result = db.execute(sql, {"user_id": user_id})
-    user = result.fetchone()
-    return user
+
+    # Instead, you can return the updated user based on the input data.
+    updated_user = {
+        "id": user_id,
+        "username": user.username,
+        "email": user.email
+    }
+
+    return updated_user
+
 
 
 def delete_user(db: Session, user_id: int):
