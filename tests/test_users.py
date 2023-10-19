@@ -1,8 +1,8 @@
 from fastapi.testclient import TestClient
-from api.main import app
+from api import main
 import json
 
-client = TestClient(app)
+client = TestClient(main.app)
 
 
 def test_create_user():

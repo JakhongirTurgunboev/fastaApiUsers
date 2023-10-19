@@ -4,10 +4,10 @@ FastAPI Crud project
 2. Open Docker desktop
 3. Inside terminal, run `docker-compose up -d --build`
 4. Open http://localhost/docs
-5. For testing run `docker-compose run fastapi pytest`
+5. For testing run `docker-compose run test`
 
 Configuration:
-1.Data validation for email and password fields added.
-2.Valid email address should be inserted.
-3.Password must be at least 8 characters long including at least one upper 
-    case, one lower case letters and special character
+Data validation for email and password fields added:
+    1.Email address must be valid.
+    2.Password must be at least 8 characters long including at least one upper 
+        case, one lower case letters and special character.
