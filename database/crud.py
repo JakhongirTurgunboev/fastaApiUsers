@@ -1,3 +1,6 @@
+import re
+
+import bcrypt
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from .utils import UserCreate, UserUpdate
@@ -5,12 +8,23 @@ from . import models
 
 
 def create_user(db: Session, user: UserCreate):
-    # Assuming 'user.password' is already hashed, you can validate the email here.
+    # Validate the email with a regular expression
+    if not re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", user.email):
+        return None  # Invalid email format, return None or handle as needed
+
+    # Validate the password
+    if not re.match(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$", user.password):
+        return None  # Password does not meet the criteria, return None or handle as needed
+
+    # Check if a user with the same email already exists
     existing_user = db.query(models.User).filter(models.User.email == user.email).first()
     if existing_user:
         return None  # User with the same email already exists, return None or handle as needed
 
-    # If email is unique, proceed with creating the user
+    # Hash the password using bcrypt
+    hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
+
+    # If email is unique and password is valid, proceed with creating the user
     sql = text(
         "INSERT INTO users (username, email, hashed_password) VALUES (:username, :email, :hashed_password) RETURNING id"
     )
@@ -18,7 +32,7 @@ def create_user(db: Session, user: UserCreate):
     result = db.execute(sql, {
         "username": user.username,
         "email": user.email,
-        "hashed_password": user.password  # Assuming 'user.password' is already hashed
+        "hashed_password": hashed_password.decode('utf-8')  # Convert bytes to a string
     })
 
     user_id = result.scalar()
@@ -40,22 +54,33 @@ def get_users(db: Session, skip: int = 0, limit: int = 10):
 
 
 def update_user(db: Session, user_id: int, user: UserUpdate):
-    sql = text(
-        "UPDATE users SET username = :username, email = :email WHERE id = :user_id"
-    )
+    # Retrieve the user to update
+    existing_user = db.query(models.User).filter(models.User.id == user_id).first()
 
-    db.execute(sql, {"user_id": user_id, "username": user.username, "email": user.email})
-    db.commit()
+    if existing_user:
+        # Validate the email with a regular expression
+        if user.email and not re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", user.email):
+            return None  # Invalid email format, return None or handle as needed
 
-    # Instead, you can return the updated user based on the input data.
-    updated_user = {
-        "id": user_id,
-        "username": user.username,
-        "email": user.email
-    }
+        # Update the user's attributes
+        if user.username:
+            existing_user.username = user.username
+        if user.email:
+            existing_user.email = user.email
 
-    return updated_user
+        # Commit the changes to the database
+        db.commit()
 
+        # Return the updated user
+        updated_user = {
+            "id": existing_user.id,
+            "username": existing_user.username,
+            "email": existing_user.email
+        }
+
+        return updated_user
+
+    return None  # User not found
 
 
 def delete_user(db: Session, user_id: int):
@@ -66,7 +91,8 @@ def delete_user(db: Session, user_id: int):
 
 
 def search_user(db: Session, name: str):
-    sql = text("SELECT id, username, email FROM users WHERE username = :name")
-    result = db.execute(sql, {"name": name})
+    # Use a SQL query with a wildcard '%' to search for usernames containing 'name'
+    sql = text("SELECT id, username, email FROM users WHERE username LIKE :name")
+    result = db.execute(sql, {"name": f"%{name}%"})
     users = result.fetchall()
     return users

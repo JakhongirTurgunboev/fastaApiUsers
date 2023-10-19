@@ -43,7 +43,7 @@ database.create_users_table_if_not_exists()
 async def create_user(user: utils.UserCreate, db: Session = Depends(get_db)):
     user_id = crud.create_user(db, user)
     if user_id is None:
-        raise HTTPException(status_code=400, detail="User with the same email already exists")
+        raise HTTPException(status_code=400, detail="User with the same email already exists or invalid email/password")
     created_user = models.User(username=user.username,
                                email=user.email,
                                hashed_password=user.password,
